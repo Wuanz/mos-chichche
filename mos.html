@@ -1,0 +1,1032 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz App - Ứng dụng Trắc nghiệm</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .progress-container {
+            background: rgba(255,255,255,0.2);
+            border-radius: 10px;
+            padding: 10px;
+            margin-top: 20px;
+        }
+
+        .progress-bar {
+            background: #2196F3;
+            height: 8px;
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+
+        .quiz-container {
+            padding: 40px;
+        }
+
+        .question-container {
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .question-container.active {
+            display: block;
+        }
+
+        .question {
+            font-size: 1.3em;
+            font-weight: 600;
+            margin-bottom: 30px;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .options {
+            display: grid;
+            gap: 15px;
+        }
+
+        .option {
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .option:hover:not(.disabled) {
+            background: #e3f2fd;
+            border-color: #2196F3;
+            transform: translateX(5px);
+        }
+
+        .option.selected {
+            background: #e8f5e8;
+            border-color: #4CAF50;
+        }
+
+        .option.correct {
+            background: #d4edda !important;
+            border-color: #4CAF50 !important;
+            position: relative;
+        }
+
+        .option.correct::after {
+            content: '✓';
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #4CAF50;
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+
+        .option.incorrect {
+            background: #f8d7da !important;
+            border-color: #dc3545 !important;
+            position: relative;
+        }
+
+        .option.incorrect::after {
+            content: '✗';
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #dc3545;
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+
+        .option.disabled {
+            cursor: not-allowed;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 40px;
+            gap: 20px;
+        }
+
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 120px;
+        }
+
+        .btn-primary {
+            background: #2196F3;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #1976D2;
+            transform: translateY(-2px);
+        }
+
+        .btn-success {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .results-container {
+            display: none;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .score {
+            font-size: 4em;
+            font-weight: bold;
+            color: #4CAF50;
+            margin: 20px 0;
+        }
+
+        .score-text {
+            font-size: 1.5em;
+            margin-bottom: 30px;
+            color: #333;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .stat-item {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 12px;
+            border-left: 4px solid #2196F3;
+        }
+
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #2196F3;
+        }
+
+        .stat-label {
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .feedback-message {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 1.1em;
+            font-weight: 600;
+            text-align: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .feedback-message.show {
+            opacity: 1;
+        }
+
+        .feedback-message.correct {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .feedback-message.incorrect {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .timer {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+            }
+            
+            .controls {
+                flex-direction: column;
+            }
+            
+            .stats {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="timer" id="timer">⏱️ 00:00</div>
+    
+    <div class="container">
+        <div class="header">
+            <h1>🎯 Quiz Trắc nghiệm</h1>
+            <p>Kiểm tra kiến thức của bạn</p>
+            <div class="progress-container">
+                <div class="progress-bar" id="progressBar"></div>
+                <p id="progressText">Câu hỏi 1/10</p>
+            </div>
+        </div>
+
+        <div class="quiz-container" id="quizContainer">
+            <!-- Questions will be inserted here -->
+        </div>
+
+        <div class="results-container" id="resultsContainer">
+            <h2>🎉 Hoàn thành Quiz!</h2>
+            <div class="score" id="finalScore">0%</div>
+            <div class="score-text" id="scoreText"></div>
+            
+            <div class="stats">
+                <div class="stat-item">
+                    <div class="stat-number" id="correctAnswers">0</div>
+                    <div class="stat-label">Câu đúng</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="incorrectAnswers">0</div>
+                    <div class="stat-label">Câu sai</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="timeSpent">0:00</div>
+                    <div class="stat-label">Thời gian</div>
+                </div>
+            </div>
+            
+            <button class="btn btn-primary" onclick="restartQuiz()">🔄 Làm lại</button>
+        </div>
+    </div>
+
+    <script>
+        // Dữ liệu câu hỏi mẫu
+        const quizData =   [
+            {
+                question: "Đơn vị nhỏ nhất dùng để đo thông tin được gọi là?",
+                options: ["Bit", "Byte", "Kilobyte", "Dữ liệu"],
+                correct: 0
+            },
+            {
+                question: "Số 74 trong hệ thập phân tương đương với số nào trong hệ nhị phân?",
+                options: ["1001010", "0101001", "0110101", "1010110"],
+                correct: 0
+            },
+            {
+                question: "Những thiết bị nào sau đây không phải là một thiết bị nhập (Input)?",
+                options: ["Bàn phím (keyboard)", "Loa (speaker)", "Chuột (mouse)", "Bút kỹ thuật số"],
+                correct: 1
+            },
+            {
+                question: "Điểm khác biệt giữa đào tạo từ xa và đào tạo trực tuyến là?",
+                options: ["Khác nhau về hệ thống mạng máy tính và các thiết bị truyền thông", "Khác nhau về cách dạy", "Đào tạo từ xa, giáo viên và học viên phải có mặt cùng một thời điểm", "Khác nhau về cách chia sẽ tài liệu, bài giảng, bài tập"],
+                correct: 0
+            },
+            {
+                question: "Phát biểu nào sau đây không đúng về làm việc từ xa?",
+                options: ["Nhân viên có thể làm việc tại nhà hay bất kỳ nơi nào họ thích", "Giảm chi phí thuê văn phòng làm việc cho công ty", "Giảm rủi ro về độ an toàn và bảo mật dữ liệu mà nhân viên truy xuất", "Giảm sự giao tiếp xã hội giữa các nhân viên với nhau và giữa nhà quản lý với nhân viên"],
+                correct: 2
+            },
+            {
+                question: "Hiệu năng của máy tính phụ thuộc vào yếu tố nào sau đây:",
+                options: ["Tốc độ CPU, dung lượng bộ nhớ RAM, dung lượng ổ cứng", "Yếu tố đa nhiệm của hệ điều hành", "Việc phân mảnh của tập tin trên ổ đĩa", "Tất cả điều đúng"],
+                correct: 3
+            },
+            {
+                question: "CPU là viết tắt của cụm từ nào?",
+                options: ["Case Processing Unit", "Command Processing Unit", "Control Processing Unit", "Central Processing Unit"],
+                correct: 3
+            },
+            {
+                question: "Bộ nhớ nào được sử dụng để lưu trữ dữ liệu tạm thời trong quá trình máy tính đang hoạt động?",
+                options: ["ROM", "RAM", "Registers", "Hard Disk"],
+                correct: 1
+            },
+            {
+                question: "Hình ảnh dưới đây là thành phần gì trong máy tính?",
+                options: ["Bo mạch chính", "Bộ xử lý trung tâm", "Đĩa cứng trong máy tính", "Thiết bị nối mạng"],
+                correct: 0
+            },
+            {
+                question: "Luật sở hữu trí tuệ tại Việt Nam có hiệu lực vào năm nào?",
+                options: ["2000", "2005", "2006", "2008"],
+                correct: 2
+            },
+            {
+                question: "Trong mạng máy tính thuật ngữ WAN có nghĩa là gì?",
+                options: ["Mạng cục bộ", "Mạng diện rộng", "Mạng toàn cầu", "Mạng Intranet"],
+                correct: 1
+            },
+            {
+                question: "Một số các bệnh tật thường xuất hiện khi sử dụng máy tính trong một thời gian dài?",
+                options: ["Các bệnh về thị giác", "Các bệnh về xương khớp", "Các bệnh về tâm lý, thần kinh", "Tất cả điều đúng"],
+                correct: 3
+            },
+            {
+                question: "Khi một ứng dụng bị treo (Not-responding), sau khi Ấn tổ hợp phím \"Ctrl+Alt+Delete\" để bật cửa sổ \"Task Manager\", bạn chọn ứng dụng bị treo rồi chọn lệnh nào sau đây để đóng ứng dụng?",
+                options: ["New Task", "Switch To", "End Task", "Delete"],
+                correct: 2
+            },
+            {
+                question: "Cho biết cách xóa hẳn tập tin hay thư mục mà không di chuyển vào Recycle Bin, sau khi chọn đối tượng, bạn ấn phím:",
+                options: ["Delete", "Alt+ Delete", "Shift+ Delete", "Control+ Delete"],
+                correct: 2
+            },
+            {
+                question: "Trong Windows Explore, muốn sao chép các tập tin hoặc các thư mục, sau khi chọn đối tượng ta thực hiện:",
+                options: ["Ctrl+C, Xác định vị trí mới, Ctrl+V", "Ctrl+X, Xác định vị trí mới, Ctrl+V", "Nhắp chuột phải, Chọn lệnh Cut, Xác định vị trí mới, Ctrl+V", "Cả A, B, C điều đúng"],
+                correct: 0
+            },
+            {
+                question: "Windows Explorer là phần mềm dùng để:",
+                options: ["Quản lý tập tin", "Quản lý thư mục", "Quản lý tập tin, thư mục", "Truy cập Internet"],
+                correct: 2
+            },
+            {
+                question: "Trong Windows 7, để thiết lập lại ngày tháng theo kiểu định dạng dd/mm/yyyy cần phải thực hiện những thao tác nào dưới đây?",
+                options: ["Start\\Control Panel\\Region and Language\\Formats", "Start\\Control Panel\\Region and Language\\Location", "Start\\Control Panel\\Date and Time\\Change date and time…", "Start\\Control Panel\\Date and Time\\Change time zone…"],
+                correct: 0
+            },
+            {
+                question: "Các ký tự sau đây ký tự nào không được sử dụng để đặt tên tập tin, thư mục?",
+                options: ["@, 1, %", "-, (,)", "~, @, #, $", "*, /, \\, <, >,?,\""],
+                correct: 3
+            },
+            {
+                question: "Trong hệ điều hành windows chức năng Disk Defragment được dùng để?",
+                options: ["Chống phân mảnh ổ cứng", "Làm giảm dung lượng ổ cứng", "Sao lưu dữ liệu ổ cứng", "Dọn tập tin rác trong ổ cứng"],
+                correct: 0
+            },
+            {
+                question: "Tên của chương trình soạn thảo văn bản có sẵn trong Windows là gì?",
+                options: ["WordPad", "Microsoft Excel", "Microsoft Word", "Paint"],
+                correct: 0
+            },
+            {
+                question: "Các tập tin sau khi được chọn và xóa bằng tổ hợp phím Shift + Delete sẽ như thế nào?",
+                options: ["Có thể khôi phục khi mở Recycle Bin", "Có thể khôi phục khi Restart lại máy tính", "Không thể khôi phục lại", "Chỉ có tập tin văn bản .DOCX là có thể khôi phục"],
+                correct: 2
+            },
+            {
+                question: "Phát biểu nào sau đây là đúng nhất?",
+                options: ["Hệ điều hành là phần mền ứng dụng", "Hệ điều hành là phần mền hệ thống", "Hệ điều hành là phần mền tiện ích", "Tất cả các phương án điều sai"],
+                correct: 1
+            },
+            {
+                question: "Phím tắt nào sau đây được sử dụng để chuyển sang các cửa sổ đang mở khác?",
+                options: ["Ctrl+Tab", "Shift+Tab", "Alt+Tab", "Window+Tab"],
+                correct: 2
+            },
+            {
+                question: "Trong Windows Explorer, ta có thể tìm kiếm tập tin hay thư mục được cập nhật, sửa chữa gần nhất bằng cách sắp xếp theo?",
+                options: ["View/Sort by – Name", "View/Sort by – Date Modified", "View/Sort by – Size", "View/Sort by – Date Created"],
+                correct: 1
+            },
+            {
+                question: "Trong Microsoft Word, để xóa một khối đã được chọn, sử dụng phím nào?",
+                options: ["Delete", "Enter", "BackSpace", "Cả A, B, C đúng"],
+                correct: 0
+            },
+            {
+                question: "Trong Microsoft Word, sau khi chọn chức năng vẽ đoạn thẳng, muốn vẽ cho thật thẳng phải nhấn và giữ những phím gì khi kéo chuột?",
+                options: ["Ctrl", "Shift", "Ctrl + Alt", "Alt + Shift"],
+                correct: 1
+            },
+            {
+                question: "Trong Microsoft Word 2016, muốn đưa các ký hiệu toán học (Căn số, tích phân, ma trận, …) vào văn bản, ta dùng chức năng?",
+                options: ["Symbol", "SmartArt", "Equation", "Text Box"],
+                correct: 2
+            },
+            {
+                question: "Trong Microsoft Word, biểu tượng giống cây chổi (Format Painter) có chức năng gì?",
+                options: ["Sao chép nội dung văn bản", "Canh lề văn bản", "Mở văn bản đã có", "Sao chép định dạng"],
+                correct: 3
+            },
+            {
+                question: "Trong Microsoft Word 2016, để gõ nhanh các từ, cụm từ lặp đi lăp lại nhiều lần, ta cài chế độ tốc ký?",
+                options: ["Cài trong chương trình hỗ trợ tiếng Việt", "File/Options/Proofing/AutoCorrect Options", "File/Options/Proofing/Frequently confused words", "Không có chức năng này"],
+                correct: 1
+            },
+            {
+                question: "Trong Microsoft Word 2016, để chèn thêm hàng vào phía trên vị trí con trỏ trong bảng, thực hiện như thế nào?",
+                options: ["Table\\Insert Row Above", "Table\\Insert Rows Below", "Layout\\Insert Above", "Layout\\Insert Below"],
+                correct: 2
+            },
+            {
+                question: "Trong Microsoft Word 2016, tỷ lệ thu nhỏ và phóng to màn hình làm việc là?",
+                options: ["10% đến 500%", "50% đến 200%", "50% đến 400%", "100% đến 200%"],
+                correct: 0
+            },
+            {
+                question: "Microsoft Word là?",
+                options: ["Phần mềm ứng dụng", "Phần mềm hệ thống", "Phần mềm quản lý", "Phần mềm xử lý bảng tính"],
+                correct: 0
+            },
+            {
+                question: "Trong Microsoft Word 2016, để hiển thị hai thước (dọc, ngang) trên màn hình soạn thảo, ta chọn thao tác trên menu nào?",
+                options: ["View/ Toolbars/ Ruler", "View/ Toolbars/ Standard", "View/Navigation Pane", "View/ Ruler"],
+                correct: 3
+            },
+            {
+                question: "Trong Microsoft Word 2016, để thay thế chữ \"thầy giáo\" thành chữ \"giáo viên\", ta chọn thao tác trên menu nào?",
+                options: ["Home/ Editing/ Replace", "Home/ Editing/ Find", "Editing/ Replace", "Editing/ Find"],
+                correct: 0
+            },
+            {
+                question: "Trong Microsoft Word 2016, để chuyển một đoạn văn bản đã chọn từ chữ thường thành chữ hoa, ta chọn thao tác trên menu nào?",
+                options: ["Home/ Font/ Change case/ Lowercase", "Format/ Change case/ UPPERCASE", "Home/ Font/ Change case/ UPPERCASE", "Format/ Change case/ Sentence Case"],
+                correct: 2
+            },
+            {
+                question: "Trong Microsoft Word 2016, để chèn tranh ảnh vào văn bản, chọn Tab lệnh nào sau đây?",
+                options: ["File", "Home", "Insert", "Layout"],
+                correct: 2
+            },
+            {
+                question: "Trong Microsoft Word 2016, sử dụng tổ hợp phím nào để tạo chữ in đậm một khối văn bản được chọn?",
+                options: ["Ctrl + B", "Ctrl + U", "Ctrl + I", "Ctrl + A"],
+                correct: 0
+            },
+            {
+                question: "Trong Microsoft Word, sử dụng tổ hợp phím nào để khôi phục lại thao tác trước?",
+                options: ["Ctrl + X", "Ctrl + Y", "Ctrl + V", "Ctrl + Z"],
+                correct: 3
+            },
+            {
+                question: "Trong Microsoft Word 2016, khi gõ các từ tiếng Việt sẽ được gạch chân răng cưa là do?",
+                options: ["Viết sai chính tả tiếng Việt", "Đã thiết lập kiểm tra lỗi chính tả và ngữ pháp", "Máy tính bị nhiễm virus", "Tất cả A, B, C đều đúng"],
+                correct: 1
+            },
+            {
+                question: "Trong Microsoft Word 2016, muốn đánh chỉ số trên (ví dụ m²) ta chọn thao tác như thế nào?",
+                options: ["Home/ Font/ rồi chọn X²", "Format/Font/ rồi chọn X²", "Format/Font rồi chọn Strikethough", "Cả A, B, C đều sai"],
+                correct: 0
+            },
+            {
+                question: "Trong Microsoft Word 2016, để gạch dưới mỗi từ một nét đơn sau khi chọn khối văn bản, ta sử dụng tổ hợp phím nào?",
+                options: ["Ctrl + Shift + B", "Ctrl + Shift + A", "Ctrl + Shift + K", "Ctrl + Shift + W"],
+                correct: 3
+            },
+            {
+                question: "Trong Microsoft Word, muốn chèn chữ nghệ thuật vào văn bản ta chọn chức năng nào?",
+                options: ["Text Art", "Oganization Art", "WordArt", "Clip Art"],
+                correct: 2
+            },
+            {
+                question: "Trong Microsoft Word, muốn trình bày văn bản trong khổ giấy theo hướng ngang ta chọn mục?",
+                options: ["Portrait", "Left", "Right", "Landscape"],
+                correct: 3
+            },
+            {
+                question: "Trong Microsoft Word 2016, để tạo ghi chú ta sử dụng lệnh nào sau đây?",
+                options: ["Insert Footnote", "Insert TextBox", "Insert Comment", "Insert Citation"],
+                correct: 0
+            },
+            {
+                question: "Trong Microsoft Excel 2016, khi nhập cột \"ĐIỂM\" là các giá trị số từ 0 đến 10, để tránh những sai sót khi nhập liệu chẳng hạn điểm 12, ta dùng chức năng nào?",
+                options: ["Data/Sort & Filter/Filter", "Data/Data tools/Data Validation", "Data/Data tools/Manager Data Model", "Không có chức kiểm tra dữ liệu nhập"],
+                correct: 1
+            },
+            {
+                question: "Để phân biệt các ô trong bảng tính người ta đánh địa chỉ ô theo cách?",
+                options: ["Tên cột là số và tên hàng là ký tự", "Tên hàng là ký tự và tên cột là số", "Tên cột là ký tự và tên hàng là số", "Tên hàng là số và Tên cột là ký tự"],
+                correct: 2
+            },
+            {
+                question: "Trong Microsoft Excel 2016, khi đặt tên cho một vùng dữ liệu sẽ tạo thuận lợi tối đa cho công việc khi cần tham chiếu đến vùng này. Để đặt tên, ta chọn vùng và chọn?",
+                options: ["Click chuột phải/Define Name…", "Formulas/Defined Names/Define Name", "Cả A,B đều đúng", "Cả A,B đều sai"],
+                correct: 2
+            },
+            {
+                question: "Trong Microsoft Excel, có mấy loại địa chỉ ô và vùng?",
+                options: ["Địa chỉ tuyệt đối", "Địa chỉ tuyệt đối, địa chỉ hỗn hợp", "Địa chỉ tuyệt đối, địa chỉ hỗn hợp, địa chỉ tương đối", "Tất cả đều sai"],
+                correct: 2
+            },
+            {
+                question: "Trong các địa chỉ sau, đâu là địa chỉ tuyệt đối của một vùng dữ liệu?",
+                options: ["$1$B:$8$C", "$B$1:$C$8", "$B1:$C8", "B$1:C$8"],
+                correct: 1
+            },
+            {
+                question: "Trong Microsoft Excel, khi dữ liệu chuỗi được trình bày trong 1 ô theo nhiều hàng được gọi là trạng thái?",
+                options: ["Wrap text", "Shrink to fit", "Merge cell", "Orientation"],
+                correct: 0
+            },
+            {
+                question: "Để nối chuỗi ta có thể sử dụng cách nào sau đây?",
+                options: ["Toán tử &", "Hàm CONCATENATE", "A và B đều đúng", "A và B đều sai"],
+                correct: 2
+            },
+            {
+                question: "Công thức trong Microsoft Excel 2016 cho phép lồng tối đa bao nhiêu hàm?",
+                options: ["8", "16", "32", "64"],
+                correct: 3
+            },
+            {
+                question: "Trong Microsoft Excel, dùng dạng biểu đồ nào để biểu diễn cho dữ liệu kiểu phần trăm là hợp lý nhất?",
+                options: ["Biểu đồ dạng cột (Columns)", "Biểu đồ đường (Line)", "Biểu đồ dạng tròn (Pie)", "Biểu đồ vùng (Area)"],
+                correct: 2
+            },
+            {
+                question: "Trong Microsoft Excel, đâu không phải là địa chỉ ô?",
+                options: ["G10", "$G10", "$G$10", "$10$G"],
+                correct: 3
+            },
+            {
+                question: "Trong Microsoft Excel, đâu là địa chỉ hỗn hợp?",
+                options: ["G10", "$G10", "$G$10", "$10$A"],
+                correct: 1
+            },
+            {
+                question: "Trong Microsoft Excel, sử dụng phím nào để chuyển đổi địa chỉ tuyệt đối thành địa chỉ tương đối hoặc ngược lại cho ô hoặc vùng được chọn?",
+                options: ["F2", "F4", "F9", "F12"],
+                correct: 1
+            },
+            {
+                question: "Trong Microsoft Excel, ký hiệu ##### trong ô có nghĩa là gì?",
+                options: ["Chương trình bảng tính bị nhiễm Virus", "Công thức nhập sai và chương trình Excel thông báo lỗi", "Lỗi phông chữ", "Độ rộng của cột không đủ để hiển thị hết số liệu hoặc đang định dạng ngày giờ cho 1 số âm"],
+                correct: 3
+            },
+            {
+                question: "Trong Microsoft Excel, để sửa dữ liệu trong một ô tính mà không cần nhập lại, thực hiện như thế nào?",
+                options: ["Nháy chuột vào ô tính cần sửa, nhấn phím F2", "Nháy chuột vào ô tính cần sửa, nhấn phím F4", "Nháy chuột vào ô tính cần sửa, nhấn phím F10", "Nháy chuột vào ô tính cần sửa, nhấn phím F12"],
+                correct: 0
+            },
+            {
+                question: "Trong Microsoft Excel 2016, để phân vùng in đã chọn, thực hiện như thế nào?",
+                options: ["Home/Print Area/Set Area", "Page Layout/Print Area/Set Print Area", "View/Set Print Area", "Cả A, B, C điều đúng"],
+                correct: 1
+            },
+            {
+                question: "Trong Microsoft Excel, dùng toán hạng nào sau đây để thực hiện phép tính so sánh?",
+                options: ["#", "<>", "><", "&"],
+                correct: 1
+            },
+            {
+                question: "Trong Microsoft Excel, tại ô A2 có giá trị là 0; B2 có giá trị là 5; tại ô C2 nhập công thức =B2/A2, kết quả sẽ hiển thị như thế nào?",
+                options: ["0", "5", "#VALUE!", "#DIV/0!"],
+                correct: 3
+            },
+            {
+                question: "Trong Microsoft Excel, tại ô A1 nhập điểm trung bình; tại ô A2 nhập hàm nào dưới đây là đúng (Nếu điểm trung bình lớn hơn 8.0 thì được học bổng 100000, ngược lại thì không được)?",
+                options: ["=IF(A1>=8.0, 100000, Không được)", "=IF(A1>8.0, 100000, \"Không được\")", "=IF(A1>8.0, 100000, Không được)", "=IF(A1>8.0, Không được, 100000)"],
+                correct: 1
+            },
+            {
+                question: "Hàm SUM(-12, -5, 7, 100) cho ra kết quả là bao nhiêu?",
+                options: ["42000", "90", "-90", "100"],
+                correct: 1
+            },
+            {
+                question: "Trong Microsoft Excel, khi chưa định dạng, vị trí dữ liệu sẽ như thế nào trong ô khi ta nhập dữ liệu?",
+                options: ["Kiểu chuỗi nằm bên phải, kiểu giá trị bên trái", "Dữ liệu nằm giữa ô", "Kiểu giá trị nằm bên phải, kiểu chuỗi bên trái", "Dữ liệu trải đều trong ô"],
+                correct: 2
+            },
+            {
+                question: "Để \"ép\" Microsoft Excel hiểu bất kỳ loại dữ liệu nào cũng là kiểu chuỗi, khi nhập ta nhập ký hiệu … này trước dữ liệu cần nhập?",
+                options: ["#", "!", "'", "\""],
+                correct: 2
+            },
+            {
+                question: "Định dạng ngày giờ của hệ thống Windows là mm/dd/yyyy. Trong MS Excel tại ô B10 ta định dạng giá trị hiển thị là dd/mm/yyyy và nhập vào giá trị 8/9/2010. Công thức =MONTH(B10) cho kết quả?",
+                options: ["8", "9", "#VALUE!", "A, B và C đều sai"],
+                correct: 0
+            },
+            {
+                question: "Trong Microsoft Excel, để dữ liệu tự động xuống dòng nếu vượt quá độ rộng của ô, thực hiện như thế nào?",
+                options: ["Chọn ô/Home/Alignment/Merge & Central", "Chọn ô/Home/Clipboard/Format Painter", "Chọn ô/Home/Alignment/Wrap Text", "Chọn ô/Home/Style/Cell Styles"],
+                correct: 2
+            },
+            {
+                question: "Trong Microsoft Excel, kết quả của công thức =MID(\"Trong Ms Excel\",7,2) là ?",
+                options: ["Trong", "Ms", "Excel", "#NAME?"],
+                correct: 1
+            },
+            {
+                question: "Trong Microsoft Excel, đâu là cách dùng hàm SUM(number 1,[number2],…) chính xác?",
+                options: ["=SUM($A$1:$A$10,B2,C3,52,D1:D10)", "=SUM(Sheet1!A1,Sheet2!A1,Sheet3!A1)", "=SUM(A1:A10,10,-5,3-2,6+5,$D$1*3)", "Cả A,B,C đều đúng"],
+                correct: 3
+            },
+                {
+                question: "Khi Microsoft Excel báo lỗi #DIV/0! là do?",
+                options: ["Số chia trong hàm hoặc công thức là ô bằng không (0) hoặc ô trống", "Công thức quá dài và quá nhiều hàm lồng nhau", "Công thức hoặc hàm chứa giá trị số không hợp lệ", "Công thức hoặc hàm có tham chiếu địa chỉ không hợp lệ"],
+                correct: 0
+                },
+                {
+                question: "Trong Microsoft Excel, khi thay đổi dữ liệu trong bảng tính thì?",
+                options: ["Các công thức liên quan sẽ tự động tính toán lại kết quả", "Người dùng phải tự thay đổi, tính lại kết quả", "Các định dạng cho vùng công thức cũng bị thay đổi", "Người dùng phải định dạng lại công thức"],
+                correct: 0
+                },
+                {
+                question: "Trong Microsoft Excel, khi nhập giá trị kiểu thời gian ta phải nhập theo định dạng của?",
+                options: ["Excel (Format cells/Number/Date-Time)", "Hệ thống (Control Panel/Region)", "Tự định dạng (Format cells/Number/Custom)", "Excel tự động nhận dạng kiểu thời gian"],
+                correct: 1
+                },
+                {
+                question: "Để xuống hàng trong một ô khi nhập dữ liệu ta dùng phím?",
+                options: ["Ctrl + Enter", "Alt + Enter", "Shift + Enter", "Window + Enter"],
+                correct: 1
+                },
+                {
+                question: "Trong Microsoft Excel, biểu đồ là một đối tượng đặc biệt cho phép.",
+                options: ["Thêm, xóa, sửa, di chuyển các tiêu đề, ghi chú, nhãn dữ liệu", "Thay đổi màu nền, màu sắc hình (cột, thanh ...) trong biểu đồ", "Thay đổi kích thước biểu đồ, font chữ", "Tất cả A,B,C đều đúng"],
+                correct: 3
+                },
+                {
+                question: "Trong Microsoft Powerpoint 2016, thao tác nào sau đây cho phép thiết lập định dạng thống nhất cho các slide?",
+                options: ["View\\Master\\Slide Master", "View\\Master Views", "Review\\Slide Master", "View\\Master Views\\Slide Master"],
+                correct: 3
+                },
+                {
+                question: "Trong Microsoft Powerpoint 2016, chế độ hiển thị nào cho phép soạn thảo nội dung Slide?",
+                options: ["Slide Sorter", "Note Page", "Normal", "Reading View"],
+                correct: 2
+                },
+                {
+                question: "Trong Microsoft Powerpoint 2016, phím F12 dùng để thực hiện công việc gì?",
+                options: ["Mở tập tin", "Lưu tập tin với tên khác", "Xóa tập tin", "Di chuyển tập tin"],
+                correct: 1
+                },
+                {
+                question: "Trong Microsoft Powerpoint 2016, để trình chiếu Slide hiện tại, bấm phím nào?",
+                options: ["F5", "Ctrl + F5", "Alt + F5", "Shift + F5"],
+                correct: 3
+                },
+                {
+                question: "Trong Microsoft Powerpoint 2016, để trình chiếu từ Slide đầu tiên, bấm phím nào?",
+                options: ["F5", "Ctrl + F5", "Alt + F5", "Shift + F5"],
+                correct: 0
+                },
+                {
+                question: "Trong Microsoft Powerpoint 2016, chọn lệnh nào để áp dụng nhiều hiệu ứng cho một đối tượng đã chọn?",
+                options: ["Select Animation", "Effect Option", "AddAnimation", "Add Effect"],
+                correct: 2
+                },
+                {
+                question: "Đang trình chiếu bài thuyết trình bằng Powerpoint, muốn dừng trình diễn ta nhấn phím nào?",
+                options: ["Enter", "Shift", "Esc", "End"],
+                correct: 2
+                },
+                {
+                question: "Trong Microsoft Powerpoint 2016, thao tác chọn Animation là để tạo hiệu ứng cho các đối tượng nào dưới đây?",
+                options: ["Chỉ áp dụng cho đối tượng khối văn bản", "Chỉ áp dụng cho đối tượng hình ảnh", "Chỉ áp dụng cho đối tượng khối biểu tượng", "Cho tất cả các đối tượng"],
+                correct: 3
+                },
+                {
+                question: "Để tạo hiệu ứng chuyển Slide ta chọn:",
+                options: ["Animation", "Slide show", "View/ Master Views", "Transitions"],
+                correct: 3
+                },
+                {
+                question: "Slide mới giống với một Slide đã chọn trước đó, ta dùng lệnh hay thao tác nào sau đây?",
+                options: ["Insert/ New Slide", "File/ New Slide", "Insert/New Slide/Duplicate selected Slides", "Insert/ Duplicate"],
+                correct: 2
+                },
+                {
+                question: "Slide Master là công cụ dùng để?",
+                options: ["Tạo slide đẹp", "Định dạng chung cho các slide", "Tạo slide nhanh, gọn, đúng", "Tạo màu nền và nội dung cho slide"],
+                correct: 1
+                },
+                {
+                question: "Ý nghĩa của các màu hình ngôi sao trong chuyển động Animations cho đối tượng.",
+                options: ["Xanh-hiện, vàng-ẩn, đỏ-biến đổi", "Xanh-ẩn, vàng-hiện, đỏ-biến đổi", "Xanh-hiện, vàng-ẩn, đỏ-biến đổi", "Xanh-hiện, vàng-biến đổi, đỏ-ẩn"],
+                correct: 0
+                },
+                {
+                question: "Khi kết thúc bài trình chiếu mà không muốn xuất hiện màn hình đen ta chọn:",
+                options: ["Slide Show/ Set Up Slide Show/ Presented by a speaker (Full Screen)", "Slide Show/ Set Up Slide Show/ Browse by an individual (Full Screen)", "File/ Option/ Advanced/ bỏ check End with black slide", "Slide Show/ Set Up Slide Show/ Show without narration"],
+                correct: 2
+                },
+                {
+                question: "Trong Powerpoint 2016, để bắt đầu trình diễn một Slide Show ta thực hiện:",
+                options: ["Slide Show/ SetUp Slide Show", "Slide Show/ From Begining", "Nhấn F5 trên bàn phím", "Câu B và C đều đúng"],
+                correct: 3
+                },
+                {
+                question: "Thuật ngữ được dùng để trao đổi thư tín qua mạng internet được gọi là gì?",
+                options: ["Hệ thống điện tử (E-System)", "Mạng điện tử (E-Network)", "Thương mại điện tử (E-Commerce)", "Thư điện tử (E-Mail)"],
+                correct: 3
+                },
+                {
+                question: "Những chương trình nào sau đây là trình duyệt Web?",
+                options: ["Internet Explorer", "Mozilla Firefox", "Google Chrome", "Cả A, B, C đúng"],
+                correct: 3
+                },
+                {
+                question: "Siêu văn bản là gì?",
+                options: ["Là văn bản có thể chỉnh sửa được và do nhà nước quản lý", "Là văn bản thường được tạo ra bởi ngôn ngữ HTML", "Là văn bản được soạn thảo trên máy tính", "Không có khái niệm trên"],
+                correct: 1
+                },
+                {
+                question: "Để gửi thư điện tử cho nhiều người (không nhìn thấy địa chỉ mail của nhau), ta nhập các địa chỉ thư điện tử vào?",
+                options: ["Address", "CC", "BCC", "To"],
+                correct: 2
+                },
+                {
+                question: "Tên miền gov.vn được dùng cho?",
+                options: ["Chính phủ, các cơ quan hành chính, tổ chức nhà nước trên lãnh thổ Việt Nam", "Tất cả các cơ quan, tổ chức", "Các đơn vị, tổ chức giáo dục", "Các tổ chức phi chính phủ"],
+                correct: 0
+                },
+                {
+                question: "Khái niệm chỉ quá trình chuyển tải dữ liệu từ máy tính của bạn sang một máy tính khác được gọi là?",
+                options: ["Download", "Hyperlink", "Bandwidth", "Upload"],
+                correct: 3
+                },
+                {
+                question: "HTTPs là gì?",
+                options: ["Là giao thức truyền siêu văn bản", "Là ngôn ngữ để soạn thảo nội dung các trang Web", "Là giao thức truyền siêu văn bản có bảo mật", "Là địa chỉ của trang Web"],
+                correct: 2
+                },
+                {
+                question: "Google không thể tìm kiếm loại thông tin nào?",
+                options: ["Số", "Chữ", "Hình ảnh", "Âm thanh"],
+                correct: 3
+                },
+                {
+                question: "Để chuyển tiếp một thư điện tử đến 1 hay nhiều địa chỉ khác ta sử dụng?",
+                options: ["Reply", "Forward", "Attach", "Reply All"],
+                correct: 1
+                },
+                {
+                question: "Phát biểu nào là đúng khi nói về địa chỉ IP?",
+                options: ["Địa chỉ IP cho biết loại máy tính kết nối vào mạng", "Mỗi máy tính tham gia mạng phải có một địa chỉ IP duy nhất", "Các máy tính tham gia vào mạng Internet có cùng một địa chỉ IP", "Các máy tính tham gia vào mạng Internet không cần địa chỉ IP"],
+                correct: 1
+                },
+                {
+                question: "Để ghi lại địa chỉ trang web yêu thích thường hay truy cập, cần sử dụng chức năng nào của trình duyệt?",
+                options: ["Back", "History", "Links", "Favorites"],
+                correct: 3
+                },
+                {
+                question: "“WWW” trong địa chỉ trang web là viết tắt của cụm từ nào?",
+                options: ["World Web Wide", "World Wide Web", "Word Wide Web", "World Web Web"],
+                correct: 1
+                }
+
+            ];
+
+        let currentQuestion = 0;
+        let score = 0;
+        let userAnswers = [];
+        let startTime = Date.now();
+        let timerInterval;
+        let isAnswered = false;
+
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                const elapsed = Math.floor((Date.now() - startTime) / 1000);
+                const minutes = Math.floor(elapsed / 60);
+                const seconds = elapsed % 60;
+                document.getElementById('timer').textContent = 
+                    `⏱️ ${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }, 1000);
+        }
+
+        function stopTimer() {
+            clearInterval(timerInterval);
+        }
+
+        function updateProgress() {
+            const progress = (currentQuestion / quizData.length) * 100;
+            document.getElementById('progressBar').style.width = progress + '%';
+            document.getElementById('progressText').textContent = 
+                `Câu hỏi ${currentQuestion + 1}/${quizData.length}`;
+        }
+
+        function displayQuestion() {
+            const questionData = quizData[currentQuestion];
+            const container = document.getElementById('quizContainer');
+            isAnswered = false;
+            
+            container.innerHTML = `
+                <div class="question-container active">
+                    <div class="question">
+                        Câu ${currentQuestion + 1}: ${questionData.question}
+                    </div>
+                    <div class="options">
+                        ${questionData.options.map((option, index) => `
+                            <div class="option" onclick="selectOption(${index})">
+                                <strong>${String.fromCharCode(65 + index)}.</strong> ${option}
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div class="feedback-message" id="feedbackMessage"></div>
+                    <div class="controls">
+                        <button class="btn btn-primary" onclick="previousQuestion()" ${currentQuestion === 0 ? 'disabled' : ''}>
+                            ← Câu trước
+                        </button>
+                        <button class="btn btn-success" id="nextBtn" onclick="nextQuestion()" disabled style="display: none;">
+                            ${currentQuestion === quizData.length - 1 ? 'Kết thúc' : 'Câu tiếp →'}
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            updateProgress();
+        }
+
+        function selectOption(index) {
+            if (isAnswered) return; // Prevent multiple selections
+            
+            isAnswered = true;
+            const options = document.querySelectorAll('.option');
+            const correctIndex = quizData[currentQuestion].correct;
+            const feedbackMessage = document.getElementById('feedbackMessage');
+            const nextBtn = document.getElementById('nextBtn');
+            
+            // Store answer
+            userAnswers[currentQuestion] = index;
+            
+            // Disable all options
+            options.forEach(opt => opt.classList.add('disabled'));
+            
+            // Show correct and incorrect answers
+            options[correctIndex].classList.add('correct');
+            if (index !== correctIndex) {
+                options[index].classList.add('incorrect');
+            }
+            
+            // Show feedback message
+            if (index === correctIndex) {
+                score++;
+                feedbackMessage.textContent = '🎉 Chính xác! Bạn đã trả lời đúng!';
+                feedbackMessage.className = 'feedback-message correct show';
+            } else {
+                feedbackMessage.textContent = `❌ Sai rồi! Đáp án đúng là: ${String.fromCharCode(65 + correctIndex)}. ${quizData[currentQuestion].options[correctIndex]}`;
+                feedbackMessage.className = 'feedback-message incorrect show';
+            }
+            
+            // Show next button and auto-advance after delay
+            nextBtn.style.display = 'block';
+            nextBtn.disabled = false;
+            
+            // Auto advance to next question after 2.5 seconds
+            setTimeout(() => {
+                if (currentQuestion < quizData.length - 1) {
+                    nextQuestion();
+                } else {
+                    // Enable manual finish for last question
+                    nextBtn.textContent = 'Xem kết quả 🏆';
+                    nextBtn.style.background = '#FF9800';
+                }
+            }, 2500);
+        }
+
+        function nextQuestion() {
+            if (currentQuestion < quizData.length - 1) {
+                currentQuestion++;
+                displayQuestion();
+            } else {
+                finishQuiz();
+            }
+        }
+
+        function previousQuestion() {
+            if (currentQuestion > 0) {
+                currentQuestion--;
+                displayQuestion();
+                
+                // If this question was already answered, show the result
+                if (userAnswers[currentQuestion] !== undefined) {
+                    const userAnswer = userAnswers[currentQuestion];
+                    const correctAnswer = quizData[currentQuestion].correct;
+                    const options = document.querySelectorAll('.option');
+                    const feedbackMessage = document.getElementById('feedbackMessage');
+                    const nextBtn = document.getElementById('nextBtn');
+                    
+                    isAnswered = true;
+                    options.forEach(opt => opt.classList.add('disabled'));
+                    options[correctAnswer].classList.add('correct');
+                    
+                    if (userAnswer !== correctAnswer) {
+                        options[userAnswer].classList.add('incorrect');
+                        feedbackMessage.textContent = `❌ Bạn đã chọn sai. Đáp án đúng là: ${String.fromCharCode(65 + correctAnswer)}. ${quizData[currentQuestion].options[correctAnswer]}`;
+                        feedbackMessage.className = 'feedback-message incorrect show';
+                    } else {
+                        feedbackMessage.textContent = '🎉 Bạn đã trả lời đúng câu này!';
+                        feedbackMessage.className = 'feedback-message correct show';
+                    }
+                    
+                    nextBtn.style.display = 'block';
+                    nextBtn.disabled = false;
+                }
+            }
+        }
+
+        function finishQuiz() {
+            stopTimer();
+            
+            const percentage = Math.round((score / quizData.length) * 100);
+            const timeElapsed = Math.floor((Date.now() - startTime) / 1000);
+            const minutes = Math.floor(timeElapsed / 60);
+            const seconds = timeElapsed % 60;
+            
+            // Show results
+            document.getElementById('quizContainer').style.display = 'none';
+            document.getElementById('resultsContainer').style.display = 'block';
+            
+            document.getElementById('finalScore').textContent = percentage + '%';
+            document.getElementById('correctAnswers').textContent = score;
+            document.getElementById('incorrectAnswers').textContent = quizData.length - score;
+            document.getElementById('timeSpent').textContent = 
+                `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            
+            let message = '';
+            if (percentage >= 90) message = '🏆 Xuất sắc! Bạn là thiên tài!';
+            else if (percentage >= 80) message = '👏 Rất tốt! Bạn làm được!';
+            else if (percentage >= 70) message = '👍 Khá ổn! Cần cố gắng thêm!';
+            else if (percentage >= 60) message = '😊 Được rồi! Hãy học thêm nhé!';
+            else message = '💪 Chưa sao! Hãy thử lại!';
+            
+            document.getElementById('scoreText').textContent = message;
+        }
+
+        function restartQuiz() {
+            currentQuestion = 0;
+            score = 0;
+            userAnswers = [];
+            startTime = Date.now();
+            isAnswered = false;
+            
+            document.getElementById('resultsContainer').style.display = 'none';
+            document.getElementById('quizContainer').style.display = 'block';
+            
+            displayQuestion();
+            startTimer();
+        }
+
+        // Initialize quiz
+        document.addEventListener('DOMContentLoaded', () => {
+            displayQuestion();
+            startTimer();
+        });
+    </script>
+</body>
+</html>
