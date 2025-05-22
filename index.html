@@ -927,16 +927,20 @@
             nextBtn.style.display = 'block';
             nextBtn.disabled = false;
             
+            if (currentQuestion === quizData.length - 1) {
+                nextBtn.textContent = 'Xem kết quả 🏆';
+                nextBtn.style.background = '#FF9800';
+            }
             // Auto advance to next question after 2.5 seconds
-            setTimeout(() => {
-                if (currentQuestion < quizData.length - 1) {
-                    nextQuestion();
-                } else {
-                    // Enable manual finish for last question
-                    nextBtn.textContent = 'Xem kết quả 🏆';
-                    nextBtn.style.background = '#FF9800';
-                }
-            }, 10500);
+            // setTimeout(() => {
+            //     if (currentQuestion < quizData.length - 1) {
+            //         nextQuestion();
+            //     } else {
+            //         // Enable manual finish for last question
+            //         nextBtn.textContent = 'Xem kết quả 🏆';
+            //         nextBtn.style.background = '#FF9800';
+            //     }
+            // }, 10500);
         }
 
         function nextQuestion() {
